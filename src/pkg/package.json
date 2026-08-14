@@ -1,0 +1,16 @@
+{
+  "name": "packvium-wasm",
+  "type": "module",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "packvium_wasm_bg.wasm",
+    "packvium_wasm.js",
+    "packvium_wasm.d.ts"
+  ],
+  "main": "packvium_wasm.js",
+  "types": "packvium_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
