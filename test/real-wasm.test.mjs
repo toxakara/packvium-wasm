@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { init, pack } from '../src/index.js';
+import { commerce, init, pack } from '../src/index.js';
 
 test('the shipped WASM engine initializes and packs a request', async () => {
   const originalFetch = globalThis.fetch;
@@ -39,6 +39,30 @@ test('the shipped WASM engine initializes and packs a request', async () => {
     assert.match(module.version(), /^\d+\.\d+\.\d+/);
     assert.equal(result.summary.packed_item_count, 1);
     assert.deepEqual(result.unpacked_items, []);
+
+    const quote = await commerce.quote({
+      tariffs: [{
+        carrier_id: 'acme',
+        service_id: 'ground',
+        versions: [{
+          effective_at: 0,
+          dimensional_weight_divisor: 5000,
+          cost_per_dimensional_kg_minor: { 'zone-a': 450 },
+          minimum_charge_minor: 900,
+          fuel_surcharge_permille: 120,
+          accessorials: [],
+        }],
+      }],
+    }, {
+      carrier_id: 'acme',
+      service_id: 'ground',
+      tariff_version: 1,
+      zone: 'zone-a',
+      actual_weight_g: 1200,
+      volume_mm3: 6000000,
+    });
+    assert.equal(quote.status, 'ok');
+    assert.equal(quote.quote.total_minor, 1008);
   } finally {
     globalThis.fetch = originalFetch;
   }

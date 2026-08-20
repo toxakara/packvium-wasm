@@ -1,6 +1,16 @@
 /* tslint:disable */
 /* eslint-disable */
 
+export function commerce_catalog_version_info_json(call: string): string;
+
+export function commerce_evaluate_policy_json(call: string): string;
+
+/**
+ * The exported commercial and control-plane API, over the same
+ * `{"document": ..., "request": ...}` JSON every binding uses (docs/COMMERCE-API.md).
+ */
+export function commerce_quote_json(call: string): string;
+
 export function pack_json(request: string): string;
 
 export function rebalance_json(request: string, result: string, max_moves: number): string;
@@ -11,6 +21,9 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly commerce_catalog_version_info_json: (a: number, b: number) => [number, number, number, number];
+    readonly commerce_evaluate_policy_json: (a: number, b: number) => [number, number, number, number];
+    readonly commerce_quote_json: (a: number, b: number) => [number, number, number, number];
     readonly pack_json: (a: number, b: number) => [number, number, number, number];
     readonly rebalance_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly version: () => [number, number];
