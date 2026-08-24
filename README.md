@@ -48,6 +48,22 @@ Both run in Node as well as a browser. Node cannot `fetch` the web-target module
 disk, so they pass `init()` a loader that reads the bytes instead — the examples show
 exactly how, because it is the first thing that surprises people.
 
+## The Packvium family
+
+One request and result contract, implemented independently in four engines (Rust,
+Python, PHP, JavaScript) and held to identical placements on a shared fixture set.
+Pick the package for your stack; mixing them in one system is safe.
+
+| Package | Install | Source |
+| --- | --- | --- |
+| Python — [`packvium`](https://pypi.org/project/packvium/) | `pip install packvium` | [packvium-python](https://github.com/toxakara/packvium-python) |
+| PHP — [`packvium/packvium`](https://packagist.org/packages/packvium/packvium) | `composer require packvium/packvium` | [packvium-php](https://github.com/toxakara/packvium-php) |
+| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "0.1"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
+| Node.js — [`@packvium/engine`](https://www.npmjs.com/package/@packvium/engine) | `npm install @packvium/engine` | [packvium-node](https://github.com/toxakara/packvium-node) |
+| Browser / WebAssembly — [`@packvium/browser`](https://www.npmjs.com/package/@packvium/browser) | `npm install @packvium/browser` | [packvium-wasm](https://github.com/toxakara/packvium-wasm) |
+| PHP FFI bridge — [`packvium/native-bridge`](https://packagist.org/packages/packvium/native-bridge) | `composer require packvium/native-bridge` | [packvium-php-bridge](https://github.com/toxakara/packvium-php-bridge) |
+| Python native selector — `packvium-native` | from source until the native wheels ship | [packvium-python-adapter](https://github.com/toxakara/packvium-python-adapter) |
+
 ## Requirements
 
 - a browser or bundler runtime with WebAssembly and dynamic `import()` support;
