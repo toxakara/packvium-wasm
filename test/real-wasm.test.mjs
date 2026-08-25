@@ -1,25 +1,31 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { commerce, init, pack } from '../src/index.js';
+import { commerce, init, pack } from '../src/node.js';
 
-test('the shipped WASM engine initializes and packs a request', async () => {
+/**
+ * . The first version of this file shimmed `globalThis.fetch` to give Node `file:`
+ * URL support and then loaded the browser entry point through it — which is to say it
+ * patched the exact thing that was broken, and the package shipped to npm unable to
+ * initialize under Node at all.
+ *
+ * There is no shim here now, and no browser case either. The generated module short-
+ * circuits on `if (wasm !== undefined) return wasm`, so a second initialization in the
+ * same process is a no-op: a shimmed "browser" case running after this one would pass
+ * without the shim ever being reached, which is precisely the kind of test that let 
+ * through. The browser path is verified in a browser, over HTTP, where its `fetch` is the
+ * real thing.
+ */
+
+test('the shipped Node entry point initializes and packs without any fetch at all', async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (input, options) => {
-    const url = input instanceof URL ? input : new URL(input);
-    if (url.protocol !== 'file:') {
-      return originalFetch(input, options);
-    }
-    return new Response(await readFile(url), {
-      headers: { 'content-type': 'application/wasm' },
-    });
+  globalThis.fetch = () => {
+    throw new Error(
+      'the Node entry point must read its WebAssembly off disk; reaching for fetch is ',
+    );
   };
 
   try {
-    // `pack()` intentionally uses the package's default loader. The fetch shim only
-    // supplies Node with the file-URL support a browser has natively; it does not
-    // replace the generated module or its initialization path.
     const result = await pack({
       units: { length: 'mm' },
       containers: [{
