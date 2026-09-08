@@ -12,7 +12,7 @@ import { commerce, init, pack } from '../src/node.js';
  * There is no shim here now, and no browser case either. The generated module short-
  * circuits on `if (wasm !== undefined) return wasm`, so a second initialization in the
  * same process is a no-op: a shimmed "browser" case running after this one would pass
- * without the shim ever being reached, which is precisely the kind of test that let 
+ * without the shim ever being reached, which is precisely the kind of test that let
  * through. The browser path is verified in a browser, over HTTP, where its `fetch` is the
  * real thing.
  */
