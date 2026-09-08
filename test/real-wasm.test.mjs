@@ -4,7 +4,7 @@ import test from 'node:test';
 import { commerce, init, pack } from '../src/node.js';
 
 /**
- * . The first version of this file shimmed `globalThis.fetch` to give Node `file:`
+ *. The first version of this file shimmed `globalThis.fetch` to give Node `file:`
  * URL support and then loaded the browser entry point through it — which is to say it
  * patched the exact thing that was broken, and the package shipped to npm unable to
  * initialize under Node at all.
