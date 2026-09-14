@@ -71,6 +71,7 @@ and execute without a project around it.
 | --- | --- |
 | [`basic.mjs`](examples/basic.mjs) | Initialize the module, pack an order, read placements, and see why an item was refused. |
 | [`commerce.mjs`](examples/commerce.mjs) | Quote a shipment in the browser with no server round-trip. |
+| [`shapes.mjs`](examples/shapes.mjs) | Items that are not their box: complementary wedges sharing one crate as `convex_hull`, and a cushion that compresses under load until the crush limit refuses it. |
 
 ```bash
 node examples/basic.mjs
