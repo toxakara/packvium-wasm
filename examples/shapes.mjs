@@ -20,24 +20,17 @@
  * engines print the same ones for the same request.
  */
 
-import { init, pack } from '../src/index.js';
+import { init, pack } from '@packvium/browser';
 
-/** Node cannot `fetch` a `file://` URL, so hand the module its bytes off disk. */
-async function loadFromDisk() {
-  const [{ readFile }, module] = await Promise.all([
-    import('node:fs/promises'),
-    import('../src/pkg/packvium_wasm.js'),
-  ]);
-  await module.default({
-    module_or_path: await readFile(new URL('../src/pkg/packvium_wasm_bg.wasm', import.meta.url)),
-  });
-  return { ...module, default: null };
-}
+// In a browser this fetches the `.wasm` file; under Node the package's own `node` entry
+// point reads it from disk. See examples/basic.mjs.
+await init();
 
-const inNode = typeof process !== 'undefined' && process.versions?.node != null;
-await (inNode ? init(loadFromDisk) : init());
-
-const MM = { units: { length: 'mm' } };
+const MM = {
+  units: { length: 'mm' },
+  // Counted work decides where the search stops; the wall clock is only a safety fuse.
+  configuration: { effort_budget: { max_candidates_evaluated: 1000000 }, time_limit_ms: 60000 },
+};
 const crate = (length, width, height) => [
   { id: 'crate', inner_dimensions: { length, width, height } },
 ];
