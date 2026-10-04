@@ -15,34 +15,23 @@
  * merely equivalent to them.
  */
 
-import { init, pack } from '../src/index.js';
+import { init, pack } from '@packvium/browser';
 
-/**
- * Node has no `fetch` for `file://` URLs, and the shipped module is built for the web
- * target, so its default initializer cannot find its own `.wasm` there. `init` takes a
- * loader for exactly this: read the bytes off disk and hand them over. Same module, same
- * answers -- only the way the bytes arrive differs.
- */
-async function loadFromDisk() {
-  const [{ readFile }, module] = await Promise.all([
-    import('node:fs/promises'),
-    import('../src/pkg/packvium_wasm.js'),
-  ]);
-  await module.default({
-    module_or_path: await readFile(new URL('../src/pkg/packvium_wasm_bg.wasm', import.meta.url)),
-  });
-  // `init` calls `default()` on whatever the loader returns. It is already initialized,
-  // so hide that entry rather than instantiate the module a second time.
-  return { ...module, default: null };
-}
-
-// In a browser this is just `await init()` -- it fetches the `.wasm` sitting next to the
-// module. Calling it up front is optional: the first `pack` would initialize anyway.
-// Doing it explicitly keeps instantiation out of your first user interaction.
-const inNode = typeof process !== 'undefined' && process.versions?.node != null;
-await (inNode ? init(loadFromDisk) : init());
+// Calling `init()` up front is optional: the first `pack` would initialize anyway. Doing
+// it explicitly keeps instantiation out of your first user interaction. In a browser it
+// fetches the `.wasm` file next to the module; under Node the package's `node` entry
+// point reads the same bytes from disk instead, because Node's `fetch` cannot open a
+// `file:` URL. Same module, same answers -- only the way the bytes arrive differs.
+await init();
 
 const request = {
+  units: { length: 'mm' },
+  configuration: {
+    // Counted work decides where the search stops, so the answer is the same on any
+    // machine; the wall-clock limit is only a safety fuse far above what this needs.
+    effort_budget: { max_candidates_evaluated: 1000000 },
+    time_limit_ms: 60000,
+  },
   items: [
     // Lengths and weights are strings on purpose. They are parsed into exact integers,
     // so '0.1' means a tenth of a millimetre and never 0.09999999999999999. Plain

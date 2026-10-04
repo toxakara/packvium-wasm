@@ -17,22 +17,11 @@
  * date with, and nothing to leak.
  */
 
-import { commerce, init } from '../src/index.js';
+import { commerce, init } from '@packvium/browser';
 
-/** See examples/basic.mjs -- Node cannot `fetch` the web-target module off disk. */
-async function loadFromDisk() {
-  const [{ readFile }, module] = await Promise.all([
-    import('node:fs/promises'),
-    import('../src/pkg/packvium_wasm.js'),
-  ]);
-  await module.default({
-    module_or_path: await readFile(new URL('../src/pkg/packvium_wasm_bg.wasm', import.meta.url)),
-  });
-  return { ...module, default: null };
-}
-
-const inNode = typeof process !== 'undefined' && process.versions?.node != null;
-await (inNode ? init(loadFromDisk) : init());
+// In a browser this fetches the `.wasm` file; under Node the package's own `node` entry
+// point reads it from disk. See examples/basic.mjs.
+await init();
 
 // One carrier, one service, one published tariff version. A version's number is its
 // 1-based position in this list, so there is no separate numbering to keep in sync.

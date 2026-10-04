@@ -4,6 +4,32 @@ What changed in `@packvium/browser` on npm, release by release. The format follo
 [Keep a Changelog](https://keepachangelog.com/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0]
+
+A rebuild of the WebAssembly engine on the 1.5.0 Rust core. No API changes. Searches are
+faster, and a misspelt configuration key is now refused (see *Fixed*).
+
+### Changed
+
+- **Faster searches, same results.** The Rust core's collision index keeps its cells in a flat
+  array instead of a tree; natively that made beam searches 41% faster. Every result is
+  byte-identical.
+
+### Fixed
+
+- **`quality` with `minimum_support_ratio` answers instead of failing** with
+  `solution_failed_validation`, and a block answer reports the support each item really has
+  rather than 1.0 for every item.
+- **A misspelt `configuration` key is refused.** A key the request schema does not declare in
+  `configuration` or its `effort_budget` (`profile` for `solver_profile`, `top_k` for
+  `alternatives`) was silently ignored, so the request ran on defaults. It is now refused with
+  reason `not_allowed` and the key's pointer, for example `/configuration/profile`. `parallel`
+  is refused too; this build always runs search starts in sequence.
+- **An item that fits no orientation no longer spends the exact search's budget**; the search
+  now finishes instead of reporting `effort_limit`. Placements are unchanged.
+- **An unknown `objective` or access direction is refused with its pointer** (`not_allowed`),
+  and refusal messages match the documentation.
+
 ## [1.4.0]
 
 A rebuild of the WebAssembly engine on the 1.4.0 Rust core. A request the schema never
