@@ -9,6 +9,8 @@
  * no bundler ever has to be told what to do with `node:fs`.
  */
 
+const MAX_U32 = 0xffffffff;
+
 export function createApi(defaultLoader) {
   let modulePromise;
 
@@ -57,5 +59,23 @@ export function createApi(defaultLoader) {
       call('commerce_catalog_version_info_json', document, request),
   };
 
-  return { init, pack, packJson, commerce };
+  /**
+   * Weight rebalancing over an existing result, the WebAssembly module's `rebalance_json`
+   * (docs/PUBLIC-API.md). Same name, arguments and answer as `@packvium/engine`'s
+   * `rebalanceWeight`, so the call moves between the two packages unchanged.
+   *
+   * `maxMoves` is checked here because the module takes a `u32` and wasm-bindgen wraps
+   * anything else into range: `-1` would arrive as four billion moves, not as an error.
+   */
+  async function rebalanceWeight(request, result, { maxMoves = 64 } = {}) {
+    if (!Number.isSafeInteger(maxMoves) || maxMoves < 0 || maxMoves > MAX_U32) {
+      throw new RangeError('maxMoves must be an integer from 0 to 4294967295');
+    }
+    const wasm = await init();
+    return JSON.parse(
+      wasm.rebalance_json(JSON.stringify(request), JSON.stringify(result), maxMoves),
+    );
+  }
+
+  return { init, pack, packJson, rebalanceWeight, commerce };
 }

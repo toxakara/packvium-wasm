@@ -6,6 +6,6 @@
 
 import { createApi } from './api.js';
 
-export const { commerce, init, pack, packJson } = createApi(
+export const { commerce, init, pack, packJson, rebalanceWeight } = createApi(
   () => import('./pkg/packvium_wasm.js'),
 );

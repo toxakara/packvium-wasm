@@ -4,6 +4,46 @@ What changed in `@packvium/browser` on npm, release by release. The format follo
 [Keep a Changelog](https://keepachangelog.com/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0]
+
+A rebuild of the WebAssembly engine on the 1.6.0 Rust core: boxes cut to measure, flat bags,
+stacking groups and a volume-first objective in the request, and a fix for small orders with a
+`convex_hull` item.
+
+### Added
+
+- **`rebalanceWeight(request, result, {maxMoves})`**, the same call as in `@packvium/engine`.
+- **`made_to_measure`, `deformable_boundary: {kind: "flat_bag"}`, `stacking_group` /
+  `accepts_stacking_groups` and `objective: "maximum_volume"`** in the request, and
+  `achieved_dimensions` and `made_to_measure` in the result.
+- **A warning for items resting on nothing** when `minimum_support_ratio` is 0. No answer
+  changes.
+
+### Changed
+
+- **An unpacked item names the limit that left it out, the same in every engine.**
+  Where the search used to fall back to `no_feasible_placement` or `search_exhausted`, an item a
+  fresh container would take but none is left reports `container_inventory_exhausted`, and one
+  that overloads an axle wherever it stands alone reports `axle_overloaded`; both are
+  `inferred`. Code that matched the old reason for these cases must match the new one.
+- **An explicit `solvers: ["homogeneous_blocks"]` request packs in the profile's start order
+  when the block solver declines the scene**, so the answer no longer depends on the
+  order the items are listed in.
+- **`quality` orders its beam by a `convex_hull` item's own solid**, not its box, so
+  it no longer assumes a second wedge cannot fit when it can.
+- **The container plan counts a `convex_hull` item by its own solid too**, so
+  `quality` no longer ranks a plan as if wedges that share a container each needed their own.
+- **`fast` and `balanced` add the block solver as one more start** and keep its answer only
+  when strictly better.
+
+### Fixed
+
+- **Small orders with a `convex_hull` item finish in a handful of search nodes** instead of
+  spending the whole time limit.
+- **`max_payload` holds in the block and grid solvers.** Their capacity cap narrowed weights
+  to 32 bits, so a payload limit above about 537 g was read wrong and a block could overfill
+  the container.
+
 ## [1.5.0]
 
 A rebuild of the WebAssembly engine on the 1.5.0 Rust core. No API changes. Searches are
