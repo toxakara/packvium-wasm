@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { commerce, init, pack, packJson } from '../src/index.js';
+import { createApi } from '../src/api.js';
+import { commerce, init, pack, packJson, rebalanceWeight } from '../src/index.js';
 
 // The real `pkg/packvium_wasm.js` is produced by `wasm-pack build` from a Rust
 // workspace this repository does not carry (see README's "Building" section), so this
@@ -82,4 +83,38 @@ test('init() loads once and caches; every export routes through it', async () =>
     () => commerce.evaluatePolicy(document, { returnMalformedJson: true }),
     SyntaxError,
   );
+});
+
+// A fresh `createApi` instance rather than the cached module above, so this case does not
+// depend on which test ran first.
+test('rebalanceWeight() hands rebalance_json both documents and a checked move count', async () => {
+  const seen = [];
+  const api = createApi(() =>
+    Promise.resolve({
+      rebalance_json: (request, result, maxMoves) => {
+        seen.push([JSON.parse(request), JSON.parse(result), maxMoves]);
+        return JSON.stringify({ containers: [], moves: [], improved: false });
+      },
+    }),
+  );
+  const request = { items: [{ id: 'a' }] };
+  const result = { containers: [{ id: 'c' }] };
+
+  assert.deepEqual(await api.rebalanceWeight(request, result), {
+    containers: [],
+    moves: [],
+    improved: false,
+  });
+  await api.rebalanceWeight(request, result, { maxMoves: 0 });
+  assert.deepEqual(seen, [
+    [request, result, 64],
+    [request, result, 0],
+  ]);
+
+  // wasm-bindgen would wrap each of these into a u32 instead of refusing it.
+  for (const maxMoves of [-1, 1.5, 2 ** 32, Number.NaN, '3']) {
+    await assert.rejects(() => api.rebalanceWeight(request, result, { maxMoves }), RangeError);
+  }
+  assert.equal(seen.length, 2, 'a refused move count must not reach the module');
+  assert.equal(typeof rebalanceWeight, 'function', 'the browser entry exports it');
 });

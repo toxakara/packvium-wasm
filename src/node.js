@@ -44,4 +44,4 @@ export function createNodeLoader(wasmUrl = WASM_URL, moduleSpecifier = MODULE_SP
   };
 }
 
-export const { commerce, init, pack, packJson } = createApi(createNodeLoader());
+export const { commerce, init, pack, packJson, rebalanceWeight } = createApi(createNodeLoader());

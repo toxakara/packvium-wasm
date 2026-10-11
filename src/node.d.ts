@@ -3,9 +3,15 @@
  * tests use -- see `node.js` for why Node needs its own binding at all.
  */
 
-import type { PackviumWasmModule, WasmModuleLoader } from './index.d.ts';
+import type { PackviumWasmModule, RebalanceResult, WasmModuleLoader } from './index.d.ts';
 
-export type { CommerceResult, PackviumWasmModule, WasmModuleLoader } from './index.d.ts';
+export type {
+  CommerceResult,
+  PackviumWasmModule,
+  RebalanceResult,
+  WasmModuleLoader,
+  WeightMove,
+} from './index.d.ts';
 
 /**
  * A loader that reads the WebAssembly off disk and initializes the module with the bytes,
@@ -20,6 +26,11 @@ export function createNodeLoader(
 export function init(loader?: WasmModuleLoader): Promise<PackviumWasmModule>;
 export function pack(request: unknown): Promise<Record<string, unknown>>;
 export function packJson(request: string): Promise<string>;
+export function rebalanceWeight(
+  request: unknown,
+  result: unknown,
+  options?: { maxMoves?: number },
+): Promise<RebalanceResult>;
 export const commerce: {
   quote(document: unknown, request: unknown): Promise<Record<string, unknown>>;
   evaluatePolicy(document: unknown, request: unknown): Promise<Record<string, unknown>>;

@@ -56,6 +56,16 @@ first call. `init()` does that once and caches it; calling it up front is option
 instantiation out of your first user interaction. `pack()` accepts an object and returns an
 object, while `packJson()` takes and returns JSON text.
 
+`rebalanceWeight(request, result, { maxMoves })` takes a request and the result packed from it
+and moves items between that result's containers to reduce the spread of their payloads,
+keeping every move that an independent validation accepts. It has the same name, arguments
+and answer as `@packvium/engine`'s `rebalanceWeight`; `maxMoves` defaults to 64.
+
+Support is not required by default: `minimum_support_ratio` is 0, so an item may rest on
+nothing above the container floor, and the result then says so in `warnings`
+(`unsupported_placements: N placement(s) rest on nothing above the container floor; ...`).
+To require support, set it above 0 — `configuration: { minimum_support_ratio: 0.75 }` for three quarters of the base.
+
 Lengths and weights are strings on purpose: they are parsed into exact integers, so `'0.1'` is a
 tenth of a millimetre and never `0.09999999999999999`. The request and result are the same JSON
 document every Packvium engine reads and writes; this package is the Rust engine compiled to
@@ -218,7 +228,7 @@ CodeMeta form.
 @software{packvium_wasm,
   author  = {{Packvium contributors}},
   title   = {Packvium for browsers},
-  version = {1.5.0},
+  version = {1.6.0},
   license = {MIT},
   url     = {https://packvium.com}
 }
