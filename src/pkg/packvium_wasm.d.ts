@@ -15,6 +15,14 @@ export function pack_json(request: string): string;
 
 export function rebalance_json(request: string, result: string, max_moves: number): string;
 
+/**
+ * The reference validator's verdict on a result (docs/VALIDATION-CONTRACT.md), as one JSON
+ * document: `{"issues": [...]}`, or `{"refusal": {"kind", "message"}}` for documents it cannot
+ * judge. Returned rather than thrown, so `@packvium/browser` raises the same `MalformedResult`
+ * `@packvium/engine` does.
+ */
+export function validate_json(request: string, result: string): string;
+
 export function version(): string;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -26,7 +34,9 @@ export interface InitOutput {
     readonly commerce_quote_json: (a: number, b: number) => [number, number, number, number];
     readonly pack_json: (a: number, b: number) => [number, number, number, number];
     readonly rebalance_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
+    readonly validate_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly version: () => [number, number];
+    readonly __wbindgen_exn_store: (a: number) => void;
     readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;

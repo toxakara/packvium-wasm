@@ -80,7 +80,7 @@ The package has two entry points, chosen by `package.json`'s `exports` condition
   understand `new URL(..., import.meta.url)` do this for you);
 - **Node** gets an entry point that reads the same `.wasm` bytes from disk, because Node's
   `fetch` cannot open a `file:` URL. Nothing to configure: `import ... from '@packvium/browser'`
-  works in Node 16+, in server-side rendering and in a Node-environment test run.
+  works in Node 18+, in server-side rendering and in a Node-environment test run.
 
 `init()` also accepts a loader function, for a runtime that can do neither: it must return the
 generated module's namespace, already initialized, or one whose `default` export initializes it.
@@ -97,30 +97,28 @@ as a fuse. `result.algorithm.time_limit_reached` tells you when the clock decide
 ## Errors
 
 A request that is wrong -- a missing field, a count of zero, an unknown unit -- is refused before
-anything is solved. Unlike `@packvium/engine`, which throws an `InvalidRequestError` object, this
-package throws a plain **string**: only the message crosses the WebAssembly boundary. It is the
-same message every Packvium engine writes, `<code>: <field>: <detail>`, so the code and the
-JSON Pointer to the bad value can be read back out of it:
+anything is solved, with the same error classes `@packvium/engine` throws, exported from this
+package under the same names:
 
 ```js
+import { pack, InvalidRequestError } from '@packvium/browser';
+
 try {
   await pack(request);
 } catch (error) {
-  if (typeof error !== 'string') throw error;
-  // "invalid_request: /items/0/quantity: must be at least 1"
-  const match = /^invalid_request: (\/\S*|): (.*)$/s.exec(error);
-  if (match) showFieldError(match[1], match[2]);   // "/items/0/quantity", "must be at least 1"
-  else console.error(error);
+  if (!(error instanceof InvalidRequestError)) throw error;
+  showFieldError(error.field, error.detail);   // "/items/0/quantity", "must be at least 1"
 }
 ```
 
-Other refusals use the same `<code>: <detail>` form: `invalid_fixed_placement` for fixed
-placements that cannot hold, `unsupported_feature` for a reserved field the engine does not
-implement yet, and `serialization error` for text `packJson()` cannot parse. A request that is
-valid but does not fit completely is not an error: the result lists what was left out, and why,
-in `unpacked_items`. [`examples/errors.mjs`](examples/errors.mjs) shows each case.
+`InvalidRequestError` (a `RangeError`) carries `code`, `reason`, `field` (a JSON Pointer) and
+`detail`. `FixedPlacementError`, its subclass, is a fixed placement that is malformed or cannot
+hold; `UnsupportedFeatureError` lists the `fields` this engine does not implement yet; text
+`packJson()` cannot parse is an `Error` with code `invalid_input`. A request that is valid but does
+not fit completely is not an error: the result lists what was left out, and why, in
+`unpacked_items`. [`examples/errors.mjs`](examples/errors.mjs) shows each case.
 
-The commerce functions report malformed input the same way, as a string.
+The commerce functions report a malformed document or request as a `CommerceInputError`.
 
 ### Quoting, policy and catalog versions
 
@@ -149,6 +147,24 @@ console.log(quote.quote.total_minor);
 The full contract — document format, every result shape, all rejection codes — is
 [COMMERCE-API.md](https://github.com/toxakara/packvium-wasm/blob/main/docs/COMMERCE-API.md).
 
+## Checking a result
+
+*New in 1.7.0.*
+
+`validate(request, result)` checks a result against the request it answers, from the JSON alone:
+geometry, support and load, accounting, the result's facts and its score. It is the same
+reference validator every Packvium package exports, so it returns the same list:
+
+```js
+import { MalformedResult, pack, validate } from '@packvium/browser';
+
+const issues = await validate(request, await pack(request)); // [] -- valid
+// [{ code: 'collision', detail: 'cube#1 with cube#2 in box#1' }] for two boxes in one place
+```
+
+It judges any engine's result, not only this package's. A result without the documented shape
+rejects with `MalformedResult`, whose `kind` is `contract` or `shape`.
+
 ## Examples
 
 Runnable, in [`examples/`](examples). Each one is a single file you can read top to bottom
@@ -158,7 +174,7 @@ and execute without a project around it.
 | --- | --- |
 | [`basic.mjs`](examples/basic.mjs) | Initialize the module, pack an order, read placements, and see why an item was refused. |
 | [`objectives.mjs`](examples/objectives.mjs) | Three objectives choosing different boxes for the same order, and `keep_upright`, `incompatible_tags` and `max_top_load` changing what may be packed where. |
-| [`errors.mjs`](examples/errors.mjs) | What a refused request looks like across WebAssembly: a string, and how to read the code, field and detail back out of it. |
+| [`errors.mjs`](examples/errors.mjs) | What a refused request looks like across WebAssembly: the error class, and its code, reason, field and detail. |
 | [`commerce.mjs`](examples/commerce.mjs) | Quote a shipment in the browser with no server round-trip. |
 | [`shapes.mjs`](examples/shapes.mjs) | Items that are not their box: complementary wedges sharing one crate as `convex_hull`, and a cushion that compresses under load until the crush limit refuses it. |
 
@@ -195,7 +211,7 @@ Documentation, the constraint reference and the benchmarks are at
 | --- | --- | --- |
 | Python — [`packvium`](https://pypi.org/project/packvium/) | `pip install packvium` | [packvium-python](https://github.com/toxakara/packvium-python) |
 | PHP — [`packvium/packvium`](https://packagist.org/packages/packvium/packvium) | `composer require packvium/packvium` | [packvium-php](https://github.com/toxakara/packvium-php) |
-| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "1.0"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
+| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "1.7"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
 | Node.js — [`@packvium/engine`](https://www.npmjs.com/package/@packvium/engine) | `npm install @packvium/engine` | [packvium-node](https://github.com/toxakara/packvium-node) |
 | Browser / WebAssembly — [`@packvium/browser`](https://www.npmjs.com/package/@packvium/browser) | `npm install @packvium/browser` | [packvium-wasm](https://github.com/toxakara/packvium-wasm) |
 | PHP FFI bridge — [`packvium/native-bridge`](https://packagist.org/packages/packvium/native-bridge) | `composer require packvium/native-bridge` | [packvium-php-bridge](https://github.com/toxakara/packvium-php-bridge) |
@@ -203,8 +219,8 @@ Documentation, the constraint reference and the benchmarks are at
 
 ## Requirements
 
-- a browser or bundler runtime with WebAssembly and dynamic `import()` support, or Node.js 16
-  or later;
+- a browser or bundler runtime with WebAssembly and dynamic `import()` support, or Node.js 18
+  or later (the WebAssembly module uses reference types, which Node 16 cannot load);
 - a custom `init()` loader only in a runtime that is neither and cannot fetch a
   package-relative WASM URL.
 
@@ -228,7 +244,7 @@ CodeMeta form.
 @software{packvium_wasm,
   author  = {{Packvium contributors}},
   title   = {Packvium for browsers},
-  version = {1.6.0},
+  version = {1.7.0},
   license = {MIT},
   url     = {https://packvium.com}
 }

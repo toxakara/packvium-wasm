@@ -118,3 +118,22 @@ test('rebalanceWeight() hands rebalance_json both documents and a checked move c
   assert.equal(seen.length, 2, 'a refused move count must not reach the module');
   assert.equal(typeof rebalanceWeight, 'function', 'the browser entry exports it');
 });
+
+test('a failed init() is not cached: the next call loads again and can succeed', async () => {
+  let attempts = 0;
+  const api = createApi(async () => {
+    attempts += 1;
+    if (attempts === 1) throw new TypeError('Failed to fetch packvium_wasm_bg.wasm');
+    return { pack_json: () => JSON.stringify({ status: 'feasible' }) };
+  });
+
+  // Two callers waiting on the same failed load are both refused, by the one load.
+  const first = await Promise.allSettled([api.pack({}), api.pack({})]);
+  assert.deepEqual(first.map((outcome) => outcome.status), ['rejected', 'rejected']);
+  assert.equal(attempts, 1);
+
+  assert.deepEqual(await api.pack({}), { status: 'feasible' });
+  assert.equal(attempts, 2, 'the retry must start a new load rather than replay the failure');
+  await api.pack({});
+  assert.equal(attempts, 2, 'a successful load is still cached');
+});

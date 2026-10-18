@@ -9,7 +9,18 @@
  * no bundler ever has to be told what to do with `node:fs`.
  */
 
+import { MalformedResult, fromWasm } from './errors.js';
+
 const MAX_U32 = 0xffffffff;
+
+/** The module's answer, or the refusal it raised as the class `@packvium/engine` throws. */
+function answered(call) {
+  try {
+    return call();
+  } catch (error) {
+    throw fromWasm(error);
+  }
+}
 
 export function createApi(defaultLoader) {
   let modulePromise;
@@ -22,26 +33,34 @@ export function createApi(defaultLoader) {
     return module;
   }
 
+  /**
+   * The module, loaded once and shared by every call. A failed load is not kept: one
+   * dropped `.wasm` fetch would otherwise break the page until it is reloaded, so
+   * every caller waiting on it is refused and the next call starts over.
+   */
   async function init(loader = defaultLoader) {
     if (modulePromise == null) {
-      modulePromise = loadAndInitialize(loader);
+      modulePromise = loadAndInitialize(loader).catch((error) => {
+        modulePromise = null;
+        throw error;
+      });
     }
     return modulePromise;
   }
 
   async function pack(request) {
     const wasm = await init();
-    return JSON.parse(wasm.pack_json(JSON.stringify(request)));
+    return JSON.parse(answered(() => wasm.pack_json(JSON.stringify(request))));
   }
 
   async function packJson(request) {
     const wasm = await init();
-    return wasm.pack_json(request);
+    return answered(() => wasm.pack_json(request));
   }
 
   async function call(entry, document, request) {
     const wasm = await init();
-    return JSON.parse(wasm[entry](JSON.stringify({ document, request })));
+    return JSON.parse(answered(() => wasm[entry](JSON.stringify({ document, request }))));
   }
 
   /**
@@ -73,9 +92,23 @@ export function createApi(defaultLoader) {
     }
     const wasm = await init();
     return JSON.parse(
-      wasm.rebalance_json(JSON.stringify(request), JSON.stringify(result), maxMoves),
+      answered(() => wasm.rebalance_json(JSON.stringify(request), JSON.stringify(result), maxMoves)),
     );
   }
 
-  return { init, pack, packJson, rebalanceWeight, commerce };
+  /**
+   * Every way `result` fails to be a sound answer to `request`, as `{code, detail}` objects
+   * identical to `packvium.validate`'s and `@packvium/engine`'s; an empty list means valid.
+   * Throws `MalformedResult` for a result without the documented shape.
+   */
+  async function validate(request, result) {
+    const wasm = await init();
+    const outcome = JSON.parse(wasm.validate_json(JSON.stringify(request), JSON.stringify(result)));
+    if (outcome.refusal) {
+      throw new MalformedResult(outcome.refusal.message, outcome.refusal.kind);
+    }
+    return outcome.issues;
+  }
+
+  return { init, pack, packJson, rebalanceWeight, validate, commerce };
 }

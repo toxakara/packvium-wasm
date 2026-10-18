@@ -41,7 +41,9 @@ export function pack_json(request) {
 async function standInModule() {
   const directory = await mkdtemp(join(tmpdir(), 'packvium-wasm-'));
   const wasmPath = join(directory, 'packvium_wasm_bg.wasm');
-  const modulePath = join(directory, 'packvium_wasm.js');
+  // `.mjs`, not wasm-pack's `.js`: the temporary directory has no `package.json` saying
+  // `"type": "module"`, and Node before 22 does not detect ESM syntax in a `.js` file.
+  const modulePath = join(directory, 'packvium_wasm.mjs');
   await writeFile(wasmPath, EMPTY_MODULE);
   await writeFile(modulePath, STAND_IN);
   return {
@@ -65,7 +67,7 @@ async function withoutFetch(body) {
 
 test('the Node loader hands the module its bytes instead of fetching a file: URL', async () => {
   const { wasmUrl, moduleSpecifier } = await standInModule();
-  const loaded = await withoutFetch(() => createNodeLoader(wasmUrl, moduleSpecifier)());
+  const loaded = await withoutFetch(() => createNodeLoader(wasmUrl, () => import(moduleSpecifier))());
 
   const module = await import(moduleSpecifier);
   assert.equal(module.received.length, 1, 'the module must be initialized exactly once');
@@ -89,7 +91,7 @@ test('the Node loader hands the module its bytes instead of fetching a file: URL
 
 test('the api bound to the Node loader answers without touching the network', async () => {
   const { wasmUrl, moduleSpecifier } = await standInModule();
-  const api = createApi(createNodeLoader(wasmUrl, moduleSpecifier));
+  const api = createApi(createNodeLoader(wasmUrl, () => import(moduleSpecifier)));
 
   const result = await withoutFetch(() => api.pack({ items: [{ id: 'a' }, { id: 'b' }] }));
   assert.equal(result.status, 'feasible');
