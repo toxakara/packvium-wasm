@@ -6,6 +6,14 @@
 
 import { createApi } from './api.js';
 
-export const { commerce, init, pack, packJson, rebalanceWeight } = createApi(
+export {
+  CommerceInputError,
+  FixedPlacementError,
+  InvalidRequestError,
+  MalformedResult,
+  UnsupportedFeatureError,
+} from './errors.js';
+
+export const { commerce, init, pack, packJson, rebalanceWeight, validate } = createApi(
   () => import('./pkg/packvium_wasm.js'),
 );

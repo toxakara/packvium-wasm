@@ -132,6 +132,32 @@ export function rebalance_json(request, result, max_moves) {
 }
 
 /**
+ * The reference validator's verdict on a result (docs/VALIDATION-CONTRACT.md), as one JSON
+ * document: `{"issues": [...]}`, or `{"refusal": {"kind", "message"}}` for documents it cannot
+ * judge. Returned rather than thrown, so `@packvium/browser` raises the same `MalformedResult`
+ * `@packvium/engine` does.
+ * @param {string} request
+ * @param {string} result
+ * @returns {string}
+ */
+export function validate_json(request, result) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(request, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(result, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.validate_json(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * @returns {string}
  */
 export function version() {
@@ -156,6 +182,10 @@ function __wbg_get_imports() {
         __wbg___wbindgen_throw_bb96b2010945f0bc: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
+        __wbg_new_358857d90afd5a2d: function(arg0, arg1) {
+            const ret = new Error(getStringFromWasm0(arg0, arg1));
+            return ret;
+        },
         __wbg_now_e7c6795a7f81e10f: function(arg0) {
             const ret = arg0.now();
             return ret;
@@ -163,6 +193,13 @@ function __wbg_get_imports() {
         __wbg_performance_3fcf6e32a7e1ed0a: function(arg0) {
             const ret = arg0.performance;
             return ret;
+        },
+        __wbg_set_8155bb79a948541b: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = Reflect.set(arg0, arg1, arg2);
+            return ret;
+        }, arguments); },
+        __wbg_set_name_7a2a05b77a392440: function(arg0, arg1, arg2) {
+            arg0.name = getStringFromWasm0(arg1, arg2);
         },
         __wbg_static_accessor_GLOBAL_THIS_466428f93b4eaa76: function() {
             const ret = typeof globalThis === 'undefined' ? null : globalThis;
@@ -217,6 +254,15 @@ function getUint8ArrayMemory0() {
         cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
+}
+
+function handleError(f, args) {
+    try {
+        return f.apply(this, args);
+    } catch (e) {
+        const idx = addToExternrefTable0(e);
+        wasm.__wbindgen_exn_store(idx);
+    }
 }
 
 function isLikeNone(x) {

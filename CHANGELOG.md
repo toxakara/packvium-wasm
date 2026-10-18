@@ -4,6 +4,59 @@ What changed in `@packvium/browser` on npm, release by release. The format follo
 [Keep a Changelog](https://keepachangelog.com/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0]
+
+A rebuild on the 1.7.0 Rust core. **Breaking:** a refused call now throws a typed `Error`, not a
+string. The reference validator joins the package, and `quality` looks ahead in its block solver.
+No request or result field changes.
+
+### Added
+
+- **`validate(request, result)` and `MalformedResult`.** The reference validator, a promise of a
+  list of issues (`code`, `detail`), empty when the result is valid; `MalformedResult` for a
+  result of the wrong shape. `PackviumWasmModule` gains an optional `validate_json`. The
+  WebAssembly module grows by about 414 KB (148 KB gzipped) to carry it.
+- **`InvalidRequestError`, `FixedPlacementError`, `UnsupportedFeatureError` and
+  `CommerceInputError`**, exported from both entry points with their types.
+
+### Changed
+
+- **Node 18 or later.** The WebAssembly module uses reference types (`externref`), which
+  Node 16 cannot instantiate. 1.6.0's module did too, so it never loaded on the Node 16 that
+  `engines` and this README promised; both now say 18, and CI runs Node 18, 20 and 22.
+- **A refused call throws an `Error`, not a string. Breaking** for code that tested
+  `typeof error === 'string'` or read the message as the thrown value. A refused request throws
+  `InvalidRequestError` (a `RangeError`) or `FixedPlacementError` with `code`, `reason`, `field`
+  and `detail`; a field the engine does not implement throws `UnsupportedFeatureError` with
+  `code` and `fields`; a commerce refusal throws `CommerceInputError`. The message is the
+  engine's own sentence, unchanged. The classes are built as `@packvium/engine`'s are:
+  `new UnsupportedFeatureError(fields)` takes the list of fields, not a message.
+- **Every schema enum value is refused as `not_allowed`.** A value outside its list in
+  `allowed_rotations`, the output and dimensional-weight units, `shape_type`,
+  `ground_contact_rule` or `configuration.solvers` throws `InvalidRequestError` with reason
+  `not_allowed` at its JSON Pointer. An unknown output unit was copied through; **`ticks` as an
+  output unit is now refused**, as the schema always said.
+- **`quality` looks ahead in the block solver**, completing its leading blocks greedily
+  and committing the best, so the answer is never worse than the greedy pass. Under a tight
+  effort budget the block start can now report `truncated` / `effort_limit`.
+- **`quality` does less work for the same answers.** Its staged beam refines
+  the best greedy order instead of the first two, and extreme points scan the exposed corners
+  instead of every combination of placed faces. Measured on the native Rust build, no answer
+  changed with either: the first took 44% off `quality`'s CPU on our benchmark, and the second
+  cut what was left to 42%.
+- **Portfolio starts go to distinct item orders**; a stacking scene that took two
+  containers now takes one.
+- **`no_eligible_container` is reported `proven`, and `insufficient_support` is reported**
+  (`observed`) where the support rule is the only blocker.
+- **A `nesting_height` not below the item's height is refused as `invalid_value`** at its
+  pointer, and with no `output` block the result is written in `units.length`'s schema code.
+
+### Fixed
+
+- **A rejected `init` is retried** on the next call instead of cached, and the Node loader
+  imports a literal path.
+- **`incompatible_tags` is applied item against item**, not against container tags.
+
 ## [1.6.0]
 
 A rebuild of the WebAssembly engine on the 1.6.0 Rust core: boxes cut to measure, flat bags,

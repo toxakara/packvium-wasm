@@ -6,19 +6,19 @@
  *     node examples/errors.mjs
  *
  * A request that is wrong -- a missing field, a count of zero, an unknown unit -- is
- * refused before anything is solved. `@packvium/engine` throws an `InvalidRequestError`
- * object for that, with `code`, `reason` and `field` properties. This package cannot:
- * what crosses the WebAssembly boundary is the message, so it throws that message as a
- * plain **string**, not an `Error`.
- *
- * The message is the same one every Packvium engine writes, `<code>: <field>: <detail>`,
- * so the code and the JSON Pointer to the bad value are in it and can be read back out.
+ * refused before anything is solved, with the same error classes `@packvium/engine` throws:
+ * an `InvalidRequestError` (a `RangeError`) with `code`, `reason`, `field` and `detail`, its
+ * subclass `FixedPlacementError` for fixed placements, and `UnsupportedFeatureError`, which
+ * lists the `fields` this engine does not implement yet. Branch on `reason` and `field`;
+ * nothing needs to be parsed out of the message.
  *
  * A request that is valid but does not fit completely is not an error at all: the result
  * lists what was left out in `unpacked_items`, as examples/basic.mjs shows.
  */
 
-import { init, pack, packJson } from '@packvium/browser';
+import {
+  InvalidRequestError, UnsupportedFeatureError, init, pack, packJson,
+} from '@packvium/browser';
 
 // In a browser this fetches the `.wasm` file; under Node the package's own `node` entry
 // point reads it from disk. See examples/basic.mjs.
@@ -39,30 +39,22 @@ const valid = () => ({
   ],
 });
 
-/**
- * Split a refusal into its parts. `invalid_request` messages carry a JSON Pointer
- * (`/items/0/quantity`) between the code and the detail; other codes carry only a detail.
- * Anything thrown that is not a string is not a refusal, so it is re-thrown untouched.
- */
-const parseRefusal = (thrown) => {
-  if (typeof thrown !== 'string') throw thrown;
-  const pointer = /^(invalid_request): (\/\S*|): (.*)$/s.exec(thrown);
-  if (pointer) return { code: pointer[1], field: pointer[2], detail: pointer[3] };
-  const [, code = '', detail = thrown] = /^([a-z_]+): (.*)$/s.exec(thrown) ?? [];
-  return { code, field: null, detail };
-};
-
 const attempt = async (label, request) => {
   try {
     await pack(request);
     console.log(`${label}: accepted`);
-  } catch (thrown) {
-    const { code, field, detail } = parseRefusal(thrown);
+  } catch (error) {
+    if (!(error instanceof InvalidRequestError) && !(error instanceof UnsupportedFeatureError)) throw error;
     console.log(`\n${label}`);
-    console.log(`  thrown  ${typeof thrown}: ${thrown}`);
-    console.log(`  code    ${code}`);
-    if (field !== null) console.log(`  field   ${field}`);
-    console.log(`  detail  ${detail}`);
+    console.log(`  thrown  ${error.name}`);
+    console.log(`  code    ${error.code}`);
+    if (error instanceof InvalidRequestError) {
+      console.log(`  reason  ${error.reason}`);
+      console.log(`  field   ${error.field}`);
+      console.log(`  detail  ${error.detail}`);
+    } else {
+      console.log(`  fields  ${error.fields.join(', ')}`);
+    }
   }
 };
 
@@ -89,13 +81,10 @@ const ahead = valid();
 ahead.containers[0].pallet_overhang_limit = { length: '50', width: '50' };
 await attempt('a reserved, unimplemented field', ahead);
 
-// `packJson` takes text, so malformed JSON is refused by the engine's own parser -- also
-// as a string, and without an `invalid_request` code.
+// `packJson` takes text, so malformed JSON is refused by the engine's own parser: an `Error`
+// with the core's `invalid_input` code rather than one of the request-error classes.
 try {
   await packJson('{"items": [');
-} catch (thrown) {
-  console.log(`\nmalformed JSON text\n  thrown  ${typeof thrown}: ${thrown}`);
+} catch (error) {
+  console.log(`\nmalformed JSON text\n  thrown  ${error.name}: ${error.message}\n  code    ${error.code}`);
 }
-
-// The one thing to remember: `catch (error)` here receives a string, so `error.message`
-// is undefined. Test `typeof error === 'string'` before reading it, as parseRefusal does.
