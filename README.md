@@ -7,7 +7,10 @@ download.
 Use it to pick the smallest carton for an order, build a pallet, load a shipping container,
 or load a truck within its axle ratings and delivery-stop order, all client-side with no
 server round trip. Every answer comes back as coordinates and rotations for each item, with
-a reason for anything that did not fit.
+a reason for anything that did not fit. Under the `default` and `lowest_cost` objectives it
+also states `optimality.lower_bound`: a complete answer that attains it reports `optimal`,
+which proves no packing obeying the request's rules scores better, and any other carries the
+gap to the bound.
 
 Full documentation, the constraint reference and benchmarks live at
 [packvium.com](https://packvium.com).
@@ -93,6 +96,10 @@ clock stops the search. `configuration.effort_budget` counts work instead (candi
 placements attempted, search nodes, restarts), so the search stops at the same point on every
 device. For anything you store or compare, set an `effort_budget` and a generous `time_limit_ms`
 as a fuse. `result.algorithm.time_limit_reached` tells you when the clock decided anyway.
+
+`effort_limit` means the budget stopped work the search still had: a search that finishes on
+exactly its budget reads `complete`, and `termination.any_start_truncated` says whether the
+budget cut a start that might have won.
 
 ## Errors
 
@@ -211,7 +218,7 @@ Documentation, the constraint reference and the benchmarks are at
 | --- | --- | --- |
 | Python — [`packvium`](https://pypi.org/project/packvium/) | `pip install packvium` | [packvium-python](https://github.com/toxakara/packvium-python) |
 | PHP — [`packvium/packvium`](https://packagist.org/packages/packvium/packvium) | `composer require packvium/packvium` | [packvium-php](https://github.com/toxakara/packvium-php) |
-| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "1.7"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
+| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "1.8"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
 | Node.js — [`@packvium/engine`](https://www.npmjs.com/package/@packvium/engine) | `npm install @packvium/engine` | [packvium-node](https://github.com/toxakara/packvium-node) |
 | Browser / WebAssembly — [`@packvium/browser`](https://www.npmjs.com/package/@packvium/browser) | `npm install @packvium/browser` | [packvium-wasm](https://github.com/toxakara/packvium-wasm) |
 | PHP FFI bridge — [`packvium/native-bridge`](https://packagist.org/packages/packvium/native-bridge) | `composer require packvium/native-bridge` | [packvium-php-bridge](https://github.com/toxakara/packvium-php-bridge) |
@@ -244,7 +251,7 @@ CodeMeta form.
 @software{packvium_wasm,
   author  = {{Packvium contributors}},
   title   = {Packvium for browsers},
-  version = {1.7.0},
+  version = {1.8.0},
   license = {MIT},
   url     = {https://packvium.com}
 }

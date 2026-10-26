@@ -4,6 +4,34 @@ What changed in `@packvium/browser` on npm, release by release. The format follo
 [Keep a Changelog](https://keepachangelog.com/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0]
+
+A rebuild on the 1.8.0 Rust core: results say how far they can be from the best possible
+answer, `validate` checks that claim, and a mistyped flag is refused.
+
+### Added
+
+- **`optimality.lower_bound` and the gap** under the `default` and `lowest_cost` objectives;
+  `validate` checks them.
+
+### Changed
+
+- **Only attaining the bound sets `optimal`**, on a complete result, and an effort budget
+  names a stop: a run that ends on exactly its budget is `complete`.
+- **A non-boolean `keep_upright`, `stackable`, `must_be_on_floor` or
+  `require_placement_coordinates` throws `InvalidRequestError`** (`wrong_type`); it was read
+  as the field's default.
+  `validate` rejects such a request with `MalformedResult` (`contract`), and reads `null` as the
+  default.
+
+### Fixed
+
+- **`solvers: ["homogeneous_blocks"]` packs under `fast` and `balanced`**; it placed nothing.
+- **`validate` reads `units: null` and `units.length: null` as millimetres**, as the engines do,
+  and refuses a `units` that is not an object, or an unknown `units.length`, as a `contract`
+  `MalformedResult` naming the field. `units.weight` is not a field and is ignored: put the unit
+  on each weight.
+
 ## [1.7.0]
 
 A rebuild on the 1.7.0 Rust core. **Breaking:** a refused call now throws a typed `Error`, not a
