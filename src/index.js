@@ -13,6 +13,7 @@ export {
   MalformedResult,
   UnsupportedFeatureError,
 } from './errors.js';
+export { parseExact, stringifyExact } from './exact-json.js';
 
 export const { commerce, init, pack, packJson, rebalanceWeight, validate } = createApi(
   () => import('./pkg/packvium_wasm.js'),

@@ -10,6 +10,7 @@
  */
 
 import { MalformedResult, fromWasm } from './errors.js';
+import { parseExact, stringifyExact } from './exact-json.js';
 
 const MAX_U32 = 0xffffffff;
 
@@ -50,7 +51,8 @@ export function createApi(defaultLoader) {
 
   async function pack(request) {
     const wasm = await init();
-    return JSON.parse(answered(() => wasm.pack_json(JSON.stringify(request))));
+    // A weight's `ticks` past 2^53 - 1 arrives as an exact `BigInt` (R19-01).
+    return parseExact(answered(() => wasm.pack_json(stringifyExact(request))));
   }
 
   async function packJson(request) {
@@ -91,8 +93,8 @@ export function createApi(defaultLoader) {
       throw new RangeError('maxMoves must be an integer from 0 to 4294967295');
     }
     const wasm = await init();
-    return JSON.parse(
-      answered(() => wasm.rebalance_json(JSON.stringify(request), JSON.stringify(result), maxMoves)),
+    return parseExact(
+      answered(() => wasm.rebalance_json(stringifyExact(request), stringifyExact(result), maxMoves)),
     );
   }
 
@@ -103,7 +105,7 @@ export function createApi(defaultLoader) {
    */
   async function validate(request, result) {
     const wasm = await init();
-    const outcome = JSON.parse(wasm.validate_json(JSON.stringify(request), JSON.stringify(result)));
+    const outcome = JSON.parse(wasm.validate_json(stringifyExact(request), stringifyExact(result)));
     if (outcome.refusal) {
       throw new MalformedResult(outcome.refusal.message, outcome.refusal.kind);
     }
