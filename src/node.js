@@ -23,6 +23,7 @@ export {
   MalformedResult,
   UnsupportedFeatureError,
 } from './errors.js';
+export { parseExact, stringifyExact } from './exact-json.js';
 
 const WASM_URL = new URL('./pkg/packvium_wasm_bg.wasm', import.meta.url);
 

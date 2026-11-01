@@ -35,6 +35,10 @@ export function createNodeLoader(
 export function init(loader?: WasmModuleLoader): Promise<PackviumWasmModule>;
 export function pack(request: unknown): Promise<Record<string, unknown>>;
 export function packJson(request: string): Promise<string>;
+/** `JSON.stringify` that writes a `BigInt` (a weight's `ticks` past 2^53 - 1) as the integer it is. */
+export function stringifyExact(value: unknown): string;
+/** `JSON.parse` that reads a `ticks` past 2^53 - 1 as an exact `BigInt`. */
+export function parseExact(text: string): unknown;
 export function rebalanceWeight(
   request: unknown,
   result: unknown,
