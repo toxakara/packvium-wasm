@@ -144,10 +144,13 @@ test('the real module throws typed errors', async (t) => {
     (error) => error instanceof browser.FixedPlacementError && error.reason === 'cannot_hold',
   );
   await assert.rejects(
-    browser.pack(request((r) => { r.containers[0].pallet_overhang_limit = '10'; return r; })),
+    browser.pack(request((r) => {
+      Object.assign(r.containers[0], { pallet_overhang_limit: { length: '10', width: '10' }, axles: [] });
+      return r;
+    })),
     (error) => error instanceof browser.UnsupportedFeatureError
-      && error.fields.join() === 'container.pallet_overhang_limit'
-      && error.message === coreUnsupported(['container.pallet_overhang_limit']),
+      && error.fields.join() === 'container.pallet_overhang_limit+axles'
+      && error.message === coreUnsupported(['container.pallet_overhang_limit+axles']),
   );
   await assert.rejects(
     browser.commerce.quote({}, {}),

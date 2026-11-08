@@ -70,7 +70,7 @@ const missing = valid();
 delete missing.items[0].dimensions.height;
 await attempt('a missing dimension', missing);
 
-// A fixed placement outside its container, and a field no engine implements yet: both
+// A fixed placement outside its container, and a combination no engine implements yet: both
 // refused, each with its own code.
 const outside = valid();
 outside.fixed_placements = [{ item_type: 'mug', container_type: 'box',
@@ -78,8 +78,8 @@ outside.fixed_placements = [{ item_type: 'mug', container_type: 'box',
 await attempt('a fixed placement outside the box', outside);
 
 const ahead = valid();
-ahead.containers[0].pallet_overhang_limit = { length: '50', width: '50' };
-await attempt('a reserved, unimplemented field', ahead);
+Object.assign(ahead.containers[0], { pallet_overhang_limit: { length: '50', width: '50' }, axles: [] });
+await attempt('an unimplemented combination', ahead);
 
 // `packJson` takes text, so malformed JSON is refused by the engine's own parser: an `Error`
 // with the core's `invalid_input` code rather than one of the request-error classes.
