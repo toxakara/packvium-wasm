@@ -4,6 +4,51 @@ What changed in `@packvium/browser` on npm, release by release. The format follo
 [Keep a Changelog](https://keepachangelog.com/1.1.0/) and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0]
+
+A rebuild on the 1.10.0 Rust core: pallets may overhang their deck, mailers may have gussets, a
+hull turns 24 ways, every placement has an id, a request may name its currency, and three more
+objectives state a lower bound. `units` refuses keys it used to ignore.
+
+### Added
+
+- **`container.pallet_overhang_limit` is honoured**, where 1.9 refused it: a load may pass the
+  deck by the stated length at each end and width at each side. Positions are measured from
+  the corner of the overhang zone; a floor placement's `support_ratio` is the share of its base
+  on the deck; the pallet reports `achieved_dimensions` and is billed at the larger of its
+  declared footprint and that size. Beside `access_directions`, `axles`, `made_to_measure`,
+  `obstacles`, a non-zero `void_fill_reserve_ratio` or an item's `stop_index` it throws
+  `UnsupportedFeatureError`.
+- **Gusseted bags:** `deformable_boundary.kind: "gusseted_bag"` with `side_gusset_depth`
+  admits a load when `b + c <= W + G`.
+- **24 rotations for a `convex_hull` item:** 18 signed codes such as `-L-W+H` after the six
+  legacy ones, accepted only on a hull.
+- **`placement_id` on every placement**, the canonical JSON of
+  `[container id, x, y, z, item_type, orientation]` in ticks; a `fixed_placements[]` entry may
+  quote it, and `validate` reports `placement_id_mismatch` and `duplicate_placement_id`.
+- **`currency`** on the request and on `rate_table`, echoed on the result; a rate table
+  without a request currency, or in another one, throws `InvalidRequestError`, and `validate`
+  reports `currency_mismatch`. It never changes the answer.
+- **Lower bounds for `maximum_value`, `open_dimension_height` and `maximum_volume`**, so
+  `optimality.lower_bound` is stated under every objective but the two carrier ones.
+- **A made-to-measure box may keep a `void_fill_reserve_ratio`.**
+
+### Changed
+
+- **`units` refuses every key but `length`**: `InvalidRequestError` with reason `not_allowed`
+  at `/units/<key>`. Write the unit on each weight instead of `units.weight`.
+- **Every container is numbered per type** on the grid lattice and block loader too:
+  `pair#1`, `large#1` where 1.9 could say `pair#2` or `large#10`.
+- **An unknown `deformable_boundary.kind`** is refused with both kinds listed.
+- Built with `wasm-bindgen` 0.2.130.
+
+### Fixed
+
+- **An explicit rotation list emptied by `keep_upright` is refused at `allowed_rotations`**,
+  with the same named request error the independent validator checks.
+- **Stocking cut boxes indexes artifact lookups once** and reports malformed consumed
+  machine fields as structured `invalid_revision` errors.
+
 ## [1.9.0]
 
 A rebuild on the 1.9.0 Rust core: the centre of gravity is checked, and answers agree with the

@@ -7,10 +7,11 @@ download.
 Use it to pick the smallest carton for an order, build a pallet, load a shipping container,
 or load a truck within its axle ratings and delivery-stop order, all client-side with no
 server round trip. Every answer comes back as coordinates and rotations for each item, with
-a reason for anything that did not fit. Under the `default` and `lowest_cost` objectives it
-also states `optimality.lower_bound`: a complete answer that attains it reports `optimal`,
-which proves no packing obeying the request's rules scores better, and any other carries the
-gap to the bound.
+a reason for anything that did not fit, and each placement carries a `placement_id` that a
+later request's `fixed_placements` can quote to pin exactly that box. Under every objective but
+`shipping_cost` and `lowest_landed_cost` it also states `optimality.lower_bound`: a complete
+answer that attains it reports `optimal`, which proves no packing obeying the request's rules
+scores better, and any other carries the gap to the bound.
 
 Full documentation, the constraint reference and benchmarks live at
 [packvium.com](https://packvium.com).
@@ -180,10 +181,10 @@ and execute without a project around it.
 | File | What it shows |
 | --- | --- |
 | [`basic.mjs`](examples/basic.mjs) | Initialize the module, pack an order, read placements, and see why an item was refused. |
-| [`objectives.mjs`](examples/objectives.mjs) | Three objectives choosing different boxes for the same order, and `keep_upright`, `incompatible_tags` and `max_top_load` changing what may be packed where. |
+| [`objectives.mjs`](examples/objectives.mjs) | Three objectives choosing different boxes for the same order, with the lower bound each answer states; a rate card priced in a declared `currency`; and `keep_upright`, `incompatible_tags`, `max_top_load` and `pallet_overhang_limit` changing what may be packed where. |
 | [`errors.mjs`](examples/errors.mjs) | What a refused request looks like across WebAssembly: the error class, and its code, reason, field and detail. |
 | [`commerce.mjs`](examples/commerce.mjs) | Quote a shipment in the browser with no server round-trip. |
-| [`shapes.mjs`](examples/shapes.mjs) | Items that are not their box: complementary wedges sharing one crate as `convex_hull`, and a cushion that compresses under load until the crush limit refuses it. |
+| [`shapes.mjs`](examples/shapes.mjs) | Items that are not their box: complementary wedges sharing one crate as `convex_hull`, two copies of one wedge paired by a signed rotation (`-L-W+H`), a cushion that compresses under load until the crush limit refuses it, and a mailer that takes more books once it has side gussets. |
 
 ```bash
 node examples/basic.mjs
@@ -218,7 +219,7 @@ Documentation, the constraint reference and the benchmarks are at
 | --- | --- | --- |
 | Python — [`packvium`](https://pypi.org/project/packvium/) | `pip install packvium` | [packvium-python](https://github.com/toxakara/packvium-python) |
 | PHP — [`packvium/packvium`](https://packagist.org/packages/packvium/packvium) | `composer require packvium/packvium` | [packvium-php](https://github.com/toxakara/packvium-php) |
-| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "1.9"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
+| Rust — [`packvium`](https://crates.io/crates/packvium) | `packvium = "1.10"` | [packvium-rust](https://github.com/toxakara/packvium-rust) |
 | Node.js — [`@packvium/engine`](https://www.npmjs.com/package/@packvium/engine) | `npm install @packvium/engine` | [packvium-node](https://github.com/toxakara/packvium-node) |
 | Browser / WebAssembly — [`@packvium/browser`](https://www.npmjs.com/package/@packvium/browser) | `npm install @packvium/browser` | [packvium-wasm](https://github.com/toxakara/packvium-wasm) |
 | PHP FFI bridge — [`packvium/native-bridge`](https://packagist.org/packages/packvium/native-bridge) | `composer require packvium/native-bridge` | [packvium-php-bridge](https://github.com/toxakara/packvium-php-bridge) |
@@ -251,7 +252,7 @@ CodeMeta form.
 @software{packvium_wasm,
   author  = {{Packvium contributors}},
   title   = {Packvium for browsers},
-  version = {1.9.0},
+  version = {1.10.0},
   license = {MIT},
   url     = {https://packvium.com}
 }

@@ -89,6 +89,18 @@ await summarise('as hulls', {
 // One crate instead of two, for the same goods and the same crate. Nothing changed except
 // the claim that the items are wedges rather than blocks.
 
+// A hull turns 24 ways, not 6. Two copies of the *same* wedge also fill the cube, but only
+// if one is turned half a turn about the vertical: that rotation is not one of the six axis
+// permutations a box needs, so it has a signed code, `-L-W+H`. The 18 signed codes are
+// accepted only on a `convex_hull` item; on a box they would change nothing.
+console.log('\nconvex_hull -- two copies of one wedge, turned to fit');
+const twins = (rotations) => ({
+  items: [{ ...wedge('wedge', LOWER_WEDGE), quantity: 2, allowed_rotations: rotations }],
+  containers: crate('100', '100', '100'),
+});
+await summarise('six box rotations', twins(['LWH', 'WLH', 'WHL', 'HWL', 'HLW', 'LHW']));
+await summarise('with -L-W+H', twins(['LWH', '-L-W+H']));
+
 // ----------------------------------------------------------------- compressible
 //
 // `compression_ratio` is the fraction of its own height an item may lose under load, and
@@ -126,6 +138,24 @@ for (const kilograms of [101, 102]) {
     containers: crate('100', '100', '200'),
   });
 }
+
+// ---------------------------------------------------------------- gusseted bag
+//
+// A poly mailer is not a box either: it is a flat bag whose walls give, so it is described
+// by `deformable_boundary` on the container, not by the items. A flat bag admits a load
+// when, across the bag, its width plus its height fits the flat width (`b + c <= W`); a
+// gusseted bag folds out `side_gusset_depth` more at each side (`b + c <= W + G`). Four
+// 20 mm books, upright as they come, into a 300 x 150 bag: flat, two go in; with a 25 mm
+// gusset, three.
+console.log('\ngusseted bag -- the same mailer with and without side gussets');
+const mailer = (boundary) => ({
+  items: [{ id: 'book', quantity: 4, weight: '300 g', allowed_rotations: ['LWH'],
+    dimensions: { length: '200', width: '100', height: '20' } }],
+  containers: [{ id: 'mailer', quantity: 1, deformable_boundary: boundary,
+    inner_dimensions: { length: '300', width: '150', height: '100' } }],
+});
+await summarise('flat bag', mailer({ kind: 'flat_bag' }));
+await summarise('gusseted, 25 mm', mailer({ kind: 'gusseted_bag', side_gusset_depth: '25' }));
 
 // Both shapes are refused rather than approximated wherever the engine cannot honour them
 // exactly -- a hull on a route, a hull under a configured clearance, a compressible item

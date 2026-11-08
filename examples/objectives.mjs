@@ -8,8 +8,13 @@
  * Both live in the request, so a browser can ask the same questions a server can.
  * `configuration.objective` decides how two valid packings are ranked; item and container
  * fields decide which packings are valid at all. The score is an array of exact integers
- * compared left to right, and its first entry is always the number of items left out: no
- * objective leaves an item behind to save money.
+ * compared left to right, and its first entry is the number of items left out -- no
+ * objective leaves an item behind to save money -- except under `maximum_volume`, which ranks
+ * the unpacked share of the volume first.
+ *
+ * Under every objective but the two carrier ones, a result also states a lower bound on its
+ * score, through the first entry where the score misses it. A result that attains its bound
+ * is `proven_optimal`; any other says how far it can be from the best possible answer.
  */
 
 import { init, pack } from '@packvium/browser';
@@ -58,7 +63,25 @@ for (const [label, configuration] of [
   const result = await solve(configuration, widgets, [snug, roomy]);
   console.log(`  ${label.padEnd(14)} ${result.containers[0].container_type.padEnd(6)} ` +
     `score ${JSON.stringify(result.score)}`);
+  const { code, lower_bound: bound } = result.optimality;
+  console.log(`  ${''.padEnd(14)} ${code}, ${bound ? `lower bound ${JSON.stringify(bound)}` : 'no bound stated'}`);
 }
+
+// A price is a number in some currency. Declaring it is optional; when the request does,
+// every rate card must agree with it, and the result carries it back, so a stored answer
+// never loses what its money is in. It never changes the search or the score.
+const rated = (id, side, currency, prices) => box(id, side,
+  { rate_table: { currency, weight_brackets_g: [6000, 20000], prices_minor: prices } });
+const quoted = await pack({
+  units: { length: 'mm' },
+  currency: 'EUR',
+  configuration: { objective: 'lowest_landed_cost', ...dimensionalWeight,
+    effort_budget: { max_candidates_evaluated: 1000000 }, time_limit_ms: 60000 },
+  items: widgets,
+  containers: [rated('snug', '300', 'EUR', [2400, 3100]), rated('roomy', '400', 'EUR', [900, 1500])],
+});
+console.log(`  ${'landed, in EUR'.padEnd(14)} ${quoted.containers[0].container_type.padEnd(6)} ` +
+  `score ${JSON.stringify(quoted.score)}, prices in ${quoted.currency}`);
 
 // Constraints are fields on items and containers. A refusal is an answer, never an error.
 console.log('\nconstraints -- what may not happen');
@@ -95,3 +118,17 @@ for (const container of loaded.containers) {
   const stack = container.placements.map((placement) => placement.item_type);
   console.log(`  max_top_load       ${container.id}: ${stack.join(' under ')}`);
 }
+
+// Not every rule takes something away. `pallet_overhang_limit` lets a load pass a pallet's
+// deck by up to the stated length at each end and width at each side. Only the deck bears
+// weight, so the placement reports the share of its base the deck carries, and the pallet
+// how big the load really is.
+const crateItem = { id: 'crate', quantity: 1, weight: '10 kg', allowed_rotations: ['LWH'],
+  dimensions: { length: '1250', width: '850', height: '400' } };
+const pallet = { id: 'pallet', max_payload: '1000 kg', pallet_overhang_limit: { length: '50', width: '50' },
+  inner_dimensions: { length: '1200', width: '800', height: '1000' } };
+const overhung = await solve({}, [crateItem], [pallet]);
+const [deck] = overhung.containers;
+const { length, width } = deck.achieved_dimensions;
+console.log(`  pallet_overhang    ${deck.id}: ${deck.placements[0].support_ratio} of the crate on the deck, ` +
+  `load ${length.value} x ${width.value} mm`);

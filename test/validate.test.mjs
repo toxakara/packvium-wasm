@@ -46,8 +46,13 @@ test('the real module judges a packed result valid and a broken one not', async 
   assert.deepEqual(await browser.validate(REQUEST, result), []);
   const broken = structuredClone(result);
   broken.containers[0].placements[1].position = structuredClone(broken.containers[0].placements[0].position);
+  // The moved placement still quotes the id of where it was (1.10).
   assert.deepEqual(await browser.validate(REQUEST, broken), [
     { code: 'collision', detail: 'cube#1 with cube#2 in box#1' },
+    {
+      code: 'placement_id_mismatch',
+      detail: 'cube#2 in box#1: reported ["box#1",160000,0,0,"cube","LWH"], expected ["box#1",0,0,0,"cube","LWH"]',
+    },
   ]);
   await assert.rejects(browser.validate(REQUEST, { containers: 'none' }), (error) =>
     error instanceof browser.MalformedResult && error.kind === 'contract'
